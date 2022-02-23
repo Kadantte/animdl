@@ -30,7 +30,7 @@ CONFIGURATION_FILE_PATH = get_existent_path(
 
 DEFAULT_CONFIG = {
     "session_file": "cli_session_animdl.json",
-    "default_provider": "animepahe",
+    "default_provider": "zoro",
     "site_urls": {
         "9anime": "https://9anime.to/",
         "allanime": "https://allanime.site/",
