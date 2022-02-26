@@ -1,63 +1,54 @@
+from functools import partial
+import json
+from .decipher import encrypt_url, decrypt_url
+
+import lxml.html as htmlparser
+
 from ....config import NINEANIME
 from ...helper import construct_site_based_regex
-from .. import crunchyroll, gogoanime, twistmoe, zoro
 
 REGEX = construct_site_based_regex(
     NINEANIME, extra_regex=r"/watch/[^&?/]+\.(?P<slug>[^&?/]+)"
 )
 
-ALTERNATIVES = "https://animixplay.to/assets/rec/{}.json"
-SLUG_SEARCH = "https://raw.githubusercontent.com/MALSync/MAL-Sync-Backup/master/data/pages/9anime/{}.json"
-
-
-def safe_iter(session, check, provider, url):
-    match = provider.REGEX.search(url)
-
-    if not match:
-        return None, None
-
-    genexp = provider.fetcher(session, url, check, match)
-
-    try:
-        return next(genexp), genexp
-    except StopIteration:
-        return None, None
-
-
-modules = {
-    "Crunchyroll": crunchyroll,
-    "Zoro": zoro,
-    "Twistmoe": twistmoe,
-    "Gogoanime": gogoanime,
+SOURCES = {
+    "41": "vidstream",
+    "28": "mycloud",
+    "35": "mp4upload",
+    "40": "streamtape",
+    "43": "videovard",
 }
 
-PRIORITY = {"Crunchyroll": 0, "Zoro": 1, "Twistmoe": 2, "Gogoanime": 3}
+
+def fetch_episode(session, data_sources):
+    for server_id, data_hash in data_sources.items():
+        yield {
+            "stream_url": decrypt_url(
+                session.get(NINEANIME + "ajax/anime/episode", params={"id": data_hash})
+                .json()
+                .get("url")
+            ),
+            "further_extraction": (
+                SOURCES.get(server_id),
+                {"headers": {"referer": NINEANIME}},
+            ),
+        }
 
 
 def fetcher(session, url, check, match):
+    slug = match.group("slug")
 
-    mal_sync = session.get(SLUG_SEARCH.format(match.group("slug")))
-
-    if mal_sync.status_code == 404:
-        return
-
-    parsed = mal_sync.json()
-    alts = session.get(ALTERNATIVES.format(parsed.get("malId"))).json()
-
-    for site, contents in sorted(
-        alts.items(), key=lambda x: PRIORITY.get(x[0], float("inf"))
-    ):
-
-        if site not in modules:
-            continue
-
-        module = modules.get(site)
-
-        for content in contents:
-            _, genexp = safe_iter(session, check, module, content.get("url"))
-            if genexp is None:
-                continue
-            else:
-                yield _
-                yield from genexp
-                return
+    for episode in htmlparser.fromstring(
+        session.get(
+            NINEANIME + "ajax/anime/servers",
+            params={"id": slug, "vrf": encrypt_url(slug)},
+        )
+        .json()
+        .get("html")
+    ).cssselect("a[title][data-sources][data-base]"):
+        number = int(episode.get("data-base", 0))
+        if check(number):
+            yield partial(
+                lambda data_sources: fetch_episode(session, data_sources),
+                data_sources=json.loads(episode.get("data-sources")),
+            ), number
