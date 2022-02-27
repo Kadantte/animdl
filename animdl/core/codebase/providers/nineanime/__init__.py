@@ -22,12 +22,14 @@ SOURCES = {
 
 def fetch_episode(session, data_sources):
     for server_id, data_hash in data_sources.items():
+        response = session.get(
+            NINEANIME + "ajax/anime/episode", params={"id": data_hash}
+        )
+        if response.status_code >= 400:
+            continue
+
         yield {
-            "stream_url": decrypt_url(
-                session.get(NINEANIME + "ajax/anime/episode", params={"id": data_hash})
-                .json()
-                .get("url")
-            ),
+            "stream_url": decrypt_url(response.json().get("url")),
             "further_extraction": (
                 SOURCES.get(server_id),
                 {"headers": {"referer": NINEANIME}},
