@@ -36,9 +36,11 @@ def placeholder(session, query):
 
 
 def search_9anime(session, query):
-    nineanime_results = session.get(NINEANIME_URL_SEARCH, params={"keyword": query, "sort": "views:desc"})
+    nineanime_results = session.get(
+        NINEANIME_URL_SEARCH, params={"keyword": query, "sort": "views:desc"}
+    )
     parsed = htmlparser.fromstring(nineanime_results.text)
-    for results in parsed.cssselect('.anime-list .name'):
+    for results in parsed.cssselect(".anime-list .name"):
         yield {
             "anime_url": NINEANIME.rstrip("/") + results.get("href"),
             "name": results.text_content(),
@@ -138,7 +140,7 @@ def search_twist(session, query):
     )
     animes = content.json()
 
-    for _, anime in search(
+    for anime in search(
         query, animes, processor=lambda r: r.get("title") or r.get("alt_title")
     ):
         yield {
@@ -154,7 +156,7 @@ def search_crunchyroll(session, query):
         ).text.strip("*/\n -secur")
     )
 
-    for _, anime in search(
+    for anime in search(
         query, content.get("data", []), processor=lambda r: r.get("name")
     ):
         yield {
@@ -173,30 +175,14 @@ def search_nyaasi(session, query):
         }
 
 
-def search_tenshi(session, query):
-    uwu.bypass_ddos_guard(session, TENSHI)
-    tenshi_page = session.get(TENSHI)
-    session_id = tenshi_page.cookies.get("tenshimoe_session")
-    token = (
-        htmlparser.fromstring(tenshi_page.text)
-        .xpath('//meta[@name="csrf-token"]')[0]
-        .get("content")
+def search_tenshi(session, query, *, domain=TENSHI):
+    uwu.bypass_ddos_guard(session, domain)
+    tenshi_page = htmlparser.fromstring(
+        session.get(domain + "anime", params={"q": query}).text
     )
 
-    ajax_content = session.post(
-        TENSHI_URL_SEARCH_POST,
-        data={"q": query},
-        headers={
-            "x-requested-with": "XMLHttpRequest",
-            "x-csrf-token": token,
-            "referer": "https://tenshi.moe/",
-            "cookie": "tenshimoe_session={}".format(session_id),
-        },
-    )
-    results = ajax_content.json()
-
-    for result in results:
-        yield {"name": result.get("title"), "anime_url": result.get("url")}
+    for result in tenshi_page.cssselect(".list > li > a"):
+        yield {"name": result.get("title"), "anime_url": result.get("href")}
 
 
 def search_zoro(session, query):
@@ -209,30 +195,18 @@ def search_zoro(session, query):
         }
 
 
+def search_h_ntai_stream(session, query):
+    for result in htmlparser.fromstring(
+        session.get(HENTAISTREAM, params={"s": query}).text
+    ).cssselect("article > .bsx > a"):
+        yield {
+            "name": result.get("title"),
+            "anime_url": result.get("href"),
+        }
+
+
 def search_haho(session, query):
-
-    haho_page = session.get(HAHO)
-    session_id = haho_page.cookies.get("hentai_aho_streaming_session")
-    token = (
-        htmlparser.fromstring(haho_page.text)
-        .xpath('//meta[@name="csrf-token"]')[0]
-        .get("content")
-    )
-
-    ajax_content = session.post(
-        HAHO_URL_SEARCH_POST,
-        data={"q": query},
-        headers={
-            "x-requested-with": "XMLHttpRequest",
-            "x-csrf-token": token,
-            "referer": "https://haho.moe/",
-            "cookie": "hentai_aho_streaming_session={}".format(session_id),
-        },
-    )
-    results = ajax_content.json()
-
-    for result in results:
-        yield {"name": result.get("title"), "anime_url": result.get("url")}
+    yield from search_tenshi(session, query, domain=HAHO)
 
 
 link = {
@@ -246,6 +220,7 @@ link = {
     "kawaiifu": search_kawaiifu,
     "gogoanime": search_gogoanime,
     "haho": search_haho,
+    "hentaistream": search_h_ntai_stream,
     "tenshi": search_tenshi,
     "nyaa": search_nyaasi,
     "twist": search_twist,

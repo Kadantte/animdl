@@ -1,5 +1,5 @@
 """
-Useless at the moment since there is no open-source way to bypass ouo.io (currently).
+Useless since there is no open-source way to bypass ouo.io (currently).
 
 This is quite slow as it tries to get all the streams at once.
 """

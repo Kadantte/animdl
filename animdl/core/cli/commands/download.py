@@ -95,7 +95,7 @@ def animdl_download(
 
     for count, (stream_urls_caller, episode_number) in enumerate(streams, 1):
 
-        content_title = "E{:02d}".format(episode_number)
+        content_title = "E{:02d}".format(int(episode_number))
         stream_urls = stream_urls_caller()
 
         if not stream_urls:

@@ -20,15 +20,7 @@ Installation of [**animdl**](https://www.github.com/justfoolingaround/animdl) ca
 
 ```sh
 
-python -m pip install git+https://www.github.com/justfoolingaround/animdl
-
-```
-
-Note that you need to have git installed, else, you would need to download the repository and then, use:
-
-```sh
-
-python -m pip install .
+python -m pip install animdl
 
 ```
 
@@ -131,11 +123,10 @@ will select episodes from 3 to 10 (inclusive), 12, 20 and from 40 to 50 (inclusi
 | [Crunchyroll](https://www.crunchyroll.com/)  | `crunchyroll`        | All                 |  <img height="25" src="https://github.com/justfoolingaround/animdl-provider-benchmarks/raw/master/api/providers/crunchyroll.png">   | TS                |
 | [Kawaiifu](https://www.kawaiifu.com/) (NSFW) | `kawaiifu`           | 720p, 1080p         |  <img height="25" src="https://github.com/justfoolingaround/animdl-provider-benchmarks/raw/master/api/providers/kawaiifu.png">   | MP4               |
 | [GogoAnime](https://www.gogoanime.pe/)       | `gogoanime`          | 480p, 720p, 1080p   | <img height="25" src="https://github.com/justfoolingaround/animdl-provider-benchmarks/raw/master/api/providers/gogoanime.png">  | MP4 / TS          |
-| [Nyaa](https://nyaa.si/)       | `nyaa`      | All |  `-` | Torrent        |
 | [Haho](https://www.haho.moe/) (NSFW)         | `haho`           | 720p, 1080p         | <img height="25" src="https://github.com/justfoolingaround/animdl-provider-benchmarks/raw/master/api/providers/haho.png">  | MP4               |
 | [Tenshi](https://www.tenshi.moe/)            | `tenshi`             | 720p, 1080p         | <img height="25" src="https://github.com/justfoolingaround/animdl-provider-benchmarks/raw/master/api/providers/tenshi.png">  | MP4               |
 | [Twist](https://www.twist.moe/)              | `twist`              | 720p, 1080p         | <img height="25" src="https://github.com/justfoolingaround/animdl-provider-benchmarks/raw/master/api/providers/twist.png">  | MP4               |
-| [Zoro](https://www.zoro.to/)                 | `zoro`   | 720p, 1080p         | <img height="25" src="https://github.com/justfoolingaround/animdl-provider-benchmarks/raw/master/api/providers/zoro.png">  | MP4 |
+| [Zoro](https://www.zoro.to/)                 | `zoro`   | 720p, 1080p         | <img height="25" src="https://github.com/justfoolingaround/animdl-provider-benchmarks/raw/master/api/providers/zoro.png">  | TS |
 
 
 ### More sites?

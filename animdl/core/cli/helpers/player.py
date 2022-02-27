@@ -12,20 +12,23 @@ def supported_streamers():
         ):
             yield player, player_info
 
+
 def start_streaming_ffplay(executable, stream_url, opts, *, headers=None, **kwargs):
     """
     ffplay does not support subtitles from a url.
     """
     args = [executable, stream_url] + (opts or [])
-    
+
     if headers:
-        args.extend(("-headers", "\r\n".join("{}:{}".format(k, v) for k, v in headers.items())))
-    
+        args.extend(
+            ("-headers", "\r\n".join("{}:{}".format(k, v) for k, v in headers.items()))
+        )
+
     content_title = kwargs.pop("content_title", "")
 
     if content_title:
         args.extend(["-metadata", "title={}".format(content_title)])
-        
+
     return subprocess.Popen(args)
 
 
@@ -69,26 +72,6 @@ def start_streaming_celluloid(executable, stream_url, opts, *, headers=None, **k
     return subprocess.Popen(args)
 
 
-def start_streaming_iina(executable, stream_url, opts, *, headers=None, **kwargs):
-    args = [executable, stream_url, "--force-window=immediate"] + (opts or [])
-
-    if headers:
-        args.append(
-            "--http-header-fields=%s"
-            % "\r\n".join("{}:{}".format(k, v) for k, v in headers.items())
-        )
-
-    content_title = kwargs.pop("content_title", "")
-    subtitles = kwargs.pop("subtitles", []) or []
-
-    if content_title:
-        args.append("--title=%s" % content_title)
-
-    args.extend("--sub-file={}".format(sub) for sub in subtitles)
-
-    return subprocess.Popen(args)
-
-
 def start_streaming_vlc(executable, stream_url, opts, *, headers=None, **kwargs):
     args = [executable, stream_url] + (opts or [])
 
@@ -104,32 +87,44 @@ def start_streaming_vlc(executable, stream_url, opts, *, headers=None, **kwargs)
 
     return subprocess.Popen(args)
 
+
 def start_streaming_android(executable, stream_url, opts, *, headers=None, **kwargs):
-    
-    args = [executable, 'start', '--user', '0', '-a', 'android.intent.action.VIEW', '-d', stream_url]
+
+    args = [
+        executable,
+        "start",
+        "--user",
+        "0",
+        "-a",
+        "android.intent.action.VIEW",
+        "-d",
+        stream_url,
+    ]
 
     if headers:
-        args.extend((
-            '-e',
-            "http-header-fields=%s"
-            % "\r\n".join("{}:{}".format(k, v) for k, v in headers.items())
-        ))
-        
+        args.extend(
+            (
+                "-e",
+                "http-header-fields=%s"
+                % "\r\n".join("{}:{}".format(k, v) for k, v in headers.items()),
+            )
+        )
+
     subtitles = kwargs.pop("subtitles", []) or []
-    
+
     if subtitles:
         for subtitle in subtitles:
-            args.extend(('-e', "sub-file={}".format(subtitle)))
+            args.extend(("-e", "sub-file={}".format(subtitle)))
 
     args.extend(opts or [])
-    args.extend(('-n', 'is.xyz.mpv/.MPVActivity'))
+    args.extend(("-n", "is.xyz.mpv/.MPVActivity"))
 
     return subprocess.Popen(args)
 
 
 PLAYER_MAPPING = {
     "mpv": start_streaming_mpv,
-    "iina": start_streaming_iina,
+    "iina": start_streaming_mpv,
     "vlc": start_streaming_vlc,
     "celluloid": start_streaming_celluloid,
     "ffplay": start_streaming_ffplay,

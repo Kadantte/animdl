@@ -23,5 +23,5 @@ def extract(session, url, **opts):
 
     content_get_uri = "https:{}".format("".join(regex_match.groups()))
 
-    streamtape_redirect = session.get(content_get_uri, allow_redirects=False)
+    streamtape_redirect = session.get(content_get_uri, follow_redirects=False)
     return [{"stream_url": streamtape_redirect.headers.get("location")}]

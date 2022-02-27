@@ -38,17 +38,17 @@ def extract_episode(session, data_id, title):
                 "title": "{} - {}".format(server.get("data-type"), title),
             }
             continue
-        
+
         cdn = SERVER_IDS.get(source_data.get("server"), "unavailable")
 
-        if cdn in ['streamsb', 'streamtape', 'unavailable']:
+        if cdn in ["streamsb", "streamtape", "unavailable"]:
             continue
 
         yield {
             "stream_url": source_data.get("link"),
             "further_extraction": (
                 cdn,
-                {},
+                {"headers": {"Referer": ZORO}},
             ),
             "title": "{} - {}".format(server.get("data-type", "").upper(), title),
         }

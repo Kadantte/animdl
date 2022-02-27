@@ -1,16 +1,15 @@
-from collections import defaultdict
 from functools import partial
 
 import lxml.html as htmlparser
 import yarl
 
 from ....config import ANIMEOUT
-from ...helper import construct_site_based_regex, parse_from_content, group_episodes
+from ...helper import construct_site_based_regex, group_episodes, parse_from_content
 
 REGEX = construct_site_based_regex(ANIMEOUT, extra_regex=r"/([^?&/]+)")
 
 
-def animeout_stream_url(url):
+def animeout_stream_url(url: "yarl.URL") -> str:
     return "https://public.animeout.xyz/" + url.with_scheme("").human_repr().lstrip("/")
 
 

@@ -1,7 +1,7 @@
 import regex
 import json
 
-SOURCES_REGEX = regex.compile("sources: (\[.+?\])")
+SOURCES_REGEX = regex.compile(r"sources: (\[.+?\])")
 
 
 def extract(session, url, **opts):

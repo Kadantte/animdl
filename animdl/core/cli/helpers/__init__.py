@@ -6,11 +6,12 @@ import regex
 from click import prompt
 
 from ...codebase import downloader, extractors
-from .fun import bannerify, choice, create_random_titles, stream_judiciary, to_stdout
-from .player import *
-from .searcher import link as processor_link
-from .processors import get_searcher, process_query
+from .fun import (bannerify, choice, create_random_titles, stream_judiciary,
+                  to_stdout)
 from .intelliq import filter_quality
+from .player import *
+from .processors import get_searcher, process_query
+from .searcher import link as processor_link
 
 fe_logger = logging.getLogger("further-extraction")
 
@@ -23,29 +24,29 @@ def inherit_stream_meta(parent, streams, *, exempt=["headers", "stream_url"]):
 
 def further_extraction(session, stream):
     extractor, options = stream.pop("further_extraction", (None, None))
-
-    if extractor:
-        for ext_module, ext in extractors.iter_extractors():
-            if ext == extractor:
-                try:
-                    return functools.reduce(
-                        lambda x, y: x + y,
-                        list(
-                            further_extraction(session, inherited_stream)
-                            for inherited_stream in inherit_stream_meta(
-                                stream,
-                                ext_module.extract(session, stream.get("stream_url")),
-                                **options
-                            )
-                        ),
-                        [],
-                    )
-                except Exception as e:
-                    fe_logger.error(
-                        "Extraction from {!r} failed due to: {!r}.".format(ext, e)
-                    )
-    else:
+    if extractor is None:
         return [stream]
+
+    for ext_module, ext in extractors.iter_extractors():
+        if ext == extractor:
+            try:
+                return functools.reduce(
+                    lambda x, y: x + y,
+                    list(
+                        further_extraction(session, inherited_stream)
+                        for inherited_stream in inherit_stream_meta(
+                            stream,
+                            ext_module.extract(
+                                session, stream.get("stream_url"), **options
+                            ),
+                        )
+                    ),
+                    [],
+                )
+            except Exception as e:
+                fe_logger.error(
+                    "Extraction from {!r} failed due to: {!r}.".format(ext, e)
+                )
 
     return []
 
@@ -143,9 +144,7 @@ def download(
                 content_url,
                 content_headers,
                 content_dir,
-                outfile_name
-                if not download_data.get("is_torrent", False)
-                else download_data.get("torrent_name"),
+                outfile_name,
                 preferred_quality=quality,
                 subtitles=download_data.get("subtitle", []),
                 **kwargs

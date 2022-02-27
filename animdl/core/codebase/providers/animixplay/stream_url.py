@@ -1,11 +1,11 @@
 import json
 import logging
+import time
 from base64 import b64decode, b64encode
 from functools import partial
 
 import lxml.html as htmlparser
 import regex
-import time
 
 animixplay_logger = logging.getLogger("provider:animixplay")
 
@@ -47,11 +47,11 @@ def extract_from_url(embed_url):
 
 
 def extract_from_embed(session, embed_url):
-    embed_page = session.get(embed_url, allow_redirects=True)
+    embed_page = session.get(embed_url)
 
-    while embed_page.status_code not in [200, 403]:
-        embed_page = session.get(embed_url, allow_redirects=True)
-        time.sleep(3)
+    while embed_page.status_code == 429:
+        embed_page = session.get(embed_url)
+        time.sleep(2.5)
 
     if embed_page.status_code == 403:
         return []
@@ -67,18 +67,6 @@ def extract_from_embed(session, embed_url):
     return extract_from_url(str(embed_page.url))
 
 
-def from_content_id(session, content_id, *, endpoint="https://api.gogocdn.club/"):
-    animixplay_logger.debug("Using {!r} to for m3u8.".format(endpoint))
-    return (
-        session.post(
-            endpoint + "v/{}".format(content_id),
-            headers={"x-requested-with": "XMLHttpRequest"},
-        )
-        .json()
-        .get("m3u8")
-    )
-
-
 def get_stream_url(session, data_url):
     content_id = ID_MATCHER.search(data_url)
 
@@ -92,7 +80,14 @@ def get_stream_url(session, data_url):
                     b64encode(content_id.group(1).encode()).decode(),
                 ).encode()
             ).decode(),
-        ) or [{"stream_url": url_update(from_content_id(session, content_id.group(1)))}]
+        ) or [
+            {
+                "stream_url": "https://gogoplay1.com/streaming.php?id={}".format(
+                    content_id.group(1)
+                ),
+                "further_extraction": ("gogoplay", {}),
+            }
+        ]
 
     return extract_from_url(data_url)
 

@@ -14,20 +14,9 @@ headers = httpx.Headers(
 )
 
 
-def get_safeoverride(f):
-    def inner(*args, **kwargs):
-        with suppress():
-            return f(*args, **kwargs)
-        return
-
-    return inner
-
-
 class AnimeHttpClient(httpx.Client):
 
     http_logger = logging.getLogger("animdl-http")
 
 
-client = AnimeHttpClient(headers=headers, timeout=30.0)
-
-client.__del__ = get_safeoverride(client.__del__)
+client = AnimeHttpClient(headers=headers, follow_redirects=True, timeout=30.0)

@@ -118,7 +118,7 @@ def arrange_template(data):
         content[d][t].append(
             {
                 "anime": titles.get("english")
-                or titles.get("romanji")
+                or titles.get("romaji")
                 or titles.get("native"),
                 "episode": airing.get("episode", 0),
                 "datetime_object": dtobj,

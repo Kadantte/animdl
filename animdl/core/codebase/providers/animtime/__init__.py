@@ -18,8 +18,10 @@ def get_content(url, js_content):
 
 def fetcher(session, url, check, match):
 
-    content = session.get(ANIMTIME + '/main.fe2f7537e4a9d7929fe6.js', headers={'range': 'bytes=386216-'}).text
-    
+    content = session.get(
+        ANIMTIME + "/main.fe2f7537e4a9d7929fe6.js", headers={"range": "bytes=386216-"}
+    ).text
+
     anime = get_content(url, content)
     episodes = int(
         regex.search(
@@ -34,4 +36,7 @@ def fetcher(session, url, check, match):
     ).groups()
     for episode in range(1, episodes + 1):
         if check(episode):
-            yield partial(lambda x: [{'stream_url': x, 'headers': {'referer': ANIMTIME}}], constructor + "{:03d}".format(episode) + end), episode
+            yield partial(
+                lambda x: [{"stream_url": x, "headers": {"referer": ANIMTIME}}],
+                constructor + "{:03d}".format(episode) + end,
+            ), episode

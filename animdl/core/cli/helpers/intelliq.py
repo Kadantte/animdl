@@ -2,25 +2,27 @@
 IntelliQ, a highly intelligent and robust quality string parser.
 """
 
+
 import logging
+from typing import Callable, Generator, Iterable, List, Optional, Tuple, TypeVar, Union
 
 import regex
 
 PORTION_PARSER = regex.compile(r'(.+?)=(r?)("|\')((?:\\\3|.)*?)\3')
 SEGMENT_PARSER = regex.compile("(best|worst|\d+)?(.*)")
 
+pair_value = TypeVar("pair_value")
+stream_type = TypeVar("stream_type")
 
-def NO_PROCESS(stream):
+
+def NO_PROCESS(stream: stream_type):
     return stream
 
 
-def get_pair(target, pairs):
-    """
-    Returns
-    ---
+def get_pair(
+    target: "pair_value", pairs: Tuple[pair_value, pair_value]
+) -> Tuple[Union[Tuple[pair_value, pair_value], Tuple[None, None], bool]]:
 
-    `tuple` pair, `bool` is_initiator
-    """
     for f, l in pairs:
         if target in (f, l):
             return (f, l), target == f
@@ -28,10 +30,12 @@ def get_pair(target, pairs):
     return (None, None), False
 
 
-def parse_parenthesized_portions(segment):
+def parse_parenthesized_portions(
+    segment: "str",
+) -> Tuple[str, Optional[Union[str, regex.Pattern]]]:
     match = PORTION_PARSER.search(segment)
 
-    if not match:
+    if match is None:
         return (segment, None)
 
     if match.group(2):
@@ -40,10 +44,12 @@ def parse_parenthesized_portions(segment):
     return (match.group(1), match.group(4))
 
 
-def portion_check(portions):
+def portion_check(
+    portions: Iterable[Tuple[str, Optional[Union[str, regex.Pattern]]]]
+) -> Callable[[stream_type], bool]:
 
     for key, portion in portions:
-        if not portion:
+        if portion is None:
             yield lambda stream, k=key: bool(stream.get(k))
             continue
 
@@ -57,11 +63,11 @@ def portion_check(portions):
 
 
 def parenthesized_portions(
-    string,
-    escape="\\",
-    quoters=["'", '"'],
-    parenthesis=[("[", "]"), ("(", ")"), ("{", "}")],
-):
+    string: "str",
+    escape: "str" = "\\",
+    quoters: List[str] = ["'", '"'],
+    parenthesis: List[Tuple[str, str]] = [("[", "]"), ("(", ")"), ("{", "}")],
+) -> Generator[Tuple[str, Optional[Union[str, regex.Pattern]]], None, None]:
 
     initiator, endpoint = min(
         parenthesis, key=lambda x: (string.find(x[0]) + 1) or float("inf")
@@ -99,15 +105,12 @@ def parenthesized_portions(
 
 
 def split_portion(
-    string,
-    splitters=["/"],
-    escape="\\",
-    quoters=["'", '"'],
-    parenthesis=[("[", "]"), ("(", ")"), ("{", "}")],
-):
-    """
-    Writing a regex is possible, I just happen to not take pleasure from such things.
-    """
+    string: str,
+    splitters: List[str] = ["/"],
+    escape: "str" = "\\",
+    quoters: List[str] = ["'", '"'],
+    parenthesis: List[Tuple[str, str]] = [("[", "]"), ("(", ")"), ("{", "}")],
+) -> Generator[str, None, None]:
 
     multiquote_context = dict.fromkeys(quoters, False)
     parenthesis_context = dict.fromkeys(parenthesis, False)
@@ -151,9 +154,9 @@ def split_portion(
     yield current_context.strip()
 
 
-def get_int(key):
+def get_int(key: Optional[Union[int, str]]) -> int:
 
-    if not key:
+    if key is None:
         return 0
 
     if isinstance(key, int):
@@ -170,7 +173,7 @@ def get_int(key):
     return 0
 
 
-def parse_quality_only(quality):
+def parse_quality_only(quality: str) -> Callable[[stream_type], bool]:
     if quality == "best":
         return lambda streams: [
             max(streams, key=lambda stream: get_int(stream.get("quality", 0)))
@@ -181,19 +184,24 @@ def parse_quality_only(quality):
             min(streams, key=lambda stream: get_int(stream.get("quality", 0)))
         ]
 
-    if quality and quality.isdigit():
+    if quality and not quality.isdigit():
         return NO_PROCESS
 
-    return lambda streams: list(
-        stream
-        for stream in streams
-        if get_int(stream.get("quality", 0)) >= int(quality or 0)
+    return lambda streams: sorted(
+        list(
+            stream
+            for stream in streams
+            if get_int(stream.get("quality", 0)) <= float(quality or "inf")
+        ),
+        key=lambda stream: get_int(stream.get("quality", 0)),
+        reverse=True,
     )
 
 
 def finalise_check(
-    quality_check, parsed_parenthesized_portions, fallback=parse_quality_only("best")
-):
+    quality_check: Callable[[stream_type], bool],
+    parsed_parenthesized_portions: "Tuple[str, Optional[Union[str, regex.Pattern]]]",
+) -> Callable[[stream_type], List[stream_type]]:
     def internal(streams):
         streams = list(
             stream
@@ -209,7 +217,11 @@ def finalise_check(
     return internal
 
 
-def parse_quality_string(quality_string: str):
+def parse_quality_string(
+    quality_string: str,
+) -> Generator[
+    Tuple[str, Callable[[stream_type], Optional[List[stream_type]]]], None, None
+]:
 
     quality_string = quality_string.lower()
 
@@ -221,7 +233,9 @@ def parse_quality_string(quality_string: str):
         )
 
 
-def filter_quality(streams, quality_string):
+def filter_quality(
+    streams: Iterable[stream_type], quality_string: str
+) -> List[stream_type]:
 
     logger = logging.getLogger("utils/intelliq")
 

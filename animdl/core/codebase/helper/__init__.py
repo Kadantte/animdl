@@ -1,10 +1,15 @@
 from collections import defaultdict
+from typing import Callable, DefaultDict, Dict, List, TypeVar
 
 import anitopy
 import regex
 
+content_type = TypeVar("content_type")
 
-def construct_site_based_regex(site_url, *, extra="", extra_regex=""):
+
+def construct_site_based_regex(
+    site_url: "str", *, extra: "str" = "", extra_regex: "str" = ""
+):
     return regex.compile(
         "(?:https?://)?(?:\\S+\\.)*{}".format(
             regex.escape(
@@ -16,19 +21,19 @@ def construct_site_based_regex(site_url, *, extra="", extra_regex=""):
     )
 
 
-def append_protocol(uri, *, protocol="https"):
+def append_protocol(uri: "str", *, protocol: "str" = "https"):
     if regex.search(r"^.+?://", uri):
         return uri
     return "{}://{}".format(protocol.rstrip(":/"), uri.lstrip("/"))
 
 
 def parse_from_content(
-    content,
+    content: "content_type",
     *,
-    name_processor=lambda x: x,
-    stream_url_processor=lambda x: x,
-    overrides={},
-    episode_parsed=False
+    name_processor: Callable[[content_type], str] = lambda x: x,
+    stream_url_processor: Callable[[content_type], str] = lambda x: x,
+    overrides: Dict = {},
+    episode_parsed: bool = False
 ):
 
     anitopy_result = anitopy.parse(name_processor(content))
@@ -49,8 +54,10 @@ def parse_from_content(
     return returnee
 
 
-def group_episodes(contents):
+def group_episodes(
+    contents: "List[Dict[str, str]]",
+) -> "DefaultDict[int, List[Dict[str, str]]]":
     grouped = defaultdict(list)
-    for r in contents:
-        grouped[int(r.pop("episode", 0))].append(r)
+    for content in contents:
+        grouped[int(content.pop("episode", 0))].append(content)
     return grouped

@@ -70,6 +70,7 @@ A highly efficient anime downloader and streamer\
 
 update_banner = terminal_center("Update available: {}")
 
+
 def create_random_titles():
 
     adjs = LANGUAGE.get("adjective")
@@ -120,11 +121,7 @@ def bannerify(f):
                 print("\x1b[35m{}\x1b[39m".format(package_banner))
                 latest, version = check_for_update()
                 if not latest:
-                    print(
-                        "\x1b[36m{}\x1b[39m".format(
-                            update_banner.format(version)
-                        )
-                    )
+                    print("\x1b[36m{}\x1b[39m".format(update_banner.format(version)))
             logging.basicConfig(
                 level=quiet_state,
                 format="[\x1b[35m%(filename)s:%(lineno)d\x1b[39m - %(asctime)s - %(name)s: %(levelname)s] %(message)s",

@@ -7,13 +7,12 @@ from ....config import GOGOANIME
 from ...helper import construct_site_based_regex
 
 REGEX = construct_site_based_regex(
-    GOGOANIME, extra_regex=r"/(?:([^&?/]+)-episode-\d+|category/([^&?/]+))"
+    GOGOANIME,
+    extra_regex=r"/(?:(?P<episode_anime_slug>[^&?/]+)-episode-[\d-]+|category/(?P<anime_slug>[^&?/]+))",
 )
 
-ANIME_RE = construct_site_based_regex(GOGOANIME, extra_regex=r"/([^&?/]+)-episode-\d+")
-
+ANIME_ID_REGEX = regex.compile(r'<input.+?value="(\d+)" id="movie_id"')
 EPISODE_LOAD_AJAX = "https://ajax.gogo-load.com/ajax/load-list-episode"
-SITE_URL = GOGOANIME
 
 
 def get_episode_list(session, anime_id):
@@ -24,27 +23,20 @@ def get_episode_list(session, anime_id):
         EPISODE_LOAD_AJAX,
         params={
             "ep_start": "0",
-            "ep_end": "2000",
+            "ep_end": "100000",
             "id": anime_id,
         },
     )
-    content = htmlparser.fromstring(episode_page.text)
+    genexp = iter(
+        htmlparser.fromstring(episode_page.text).cssselect(
+            'a[class=""] , a[class=""]  > div.name'
+        )
+    )
 
-    for episode in content.xpath('//ul[@id="episode_related"]/li/a'):
-        yield SITE_URL + episode.get("href", "").strip()
-
-
-def get_anime_id(html_content):
-    content = html_content.xpath('//input[@id="movie_id"]')
-    assert content, "No GGA Anime ID found."
-    return int(content[0].get("value", 0))
-
-
-def convert_to_anime_page(url):
-    match = ANIME_RE.search(url)
-    if match:
-        return SITE_URL + "/category/%s" % match.group(1)
-    return url
+    for (a, div) in zip(genexp, genexp):
+        yield float(div.text_content().split(" ")[1]), GOGOANIME + a.get(
+            "href"
+        ).strip(),
 
 
 def get_quality(url_text):
@@ -55,21 +47,19 @@ def get_quality(url_text):
 
 
 def get_embed_page(session, episode_url):
-    response = session.get(episode_url)
-    content_parsed = htmlparser.fromstring(response.text)
+    content_parsed = htmlparser.fromstring(session.get(episode_url).text)
     return "https:{}".format(content_parsed.cssselect("iframe")[0].get("src"))
 
 
 def fetcher(session, url, check, match):
-    url = convert_to_anime_page(url)
 
-    anime_page = session.get(url)
-    content_id = get_anime_id(htmlparser.fromstring(anime_page.text))
+    if match.group("episode_anime_slug"):
+        url = "{}category/{}".format(GOGOANIME, match.group("episode_anime_slug"))
 
-    episodes = reversed([*get_episode_list(session, content_id)])
+    content_id = ANIME_ID_REGEX.search(session.get(url).text).group(1)
 
-    for index, episode in enumerate(episodes, 1):
-        if check(index):
+    for episode, episode_page in reversed(list(get_episode_list(session, content_id))):
+        if check(episode):
             yield partial(
                 lambda e: [
                     {
@@ -77,5 +67,5 @@ def fetcher(session, url, check, match):
                         "further_extraction": ("gogoplay", {}),
                     }
                 ],
-                episode,
-            ), index
+                episode_page,
+            ), episode

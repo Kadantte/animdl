@@ -1,8 +1,6 @@
 import logging
-import regex
-import time
 
-import httpx
+import regex
 import yarl
 from Cryptodome.Cipher import AES
 
@@ -140,7 +138,7 @@ def hls_yield(session, q_dicts, quality_string, auto_retry=2, *, continuation_in
         ts_response = session.get(
             stream.human_repr(), headers=origin_m3u8.get("headers", {})
         )
-        
+
         ts_response.raise_for_status()
         ts_data = ts_response.content
 

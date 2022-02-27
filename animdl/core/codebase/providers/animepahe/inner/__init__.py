@@ -39,8 +39,8 @@ def bypass_adfly(session, adfly_url):
     response_code = 302
     while response_code != 200:
         adfly_content = session.get(
-            session.get(adfly_url, allow_redirects=False).headers.get("location"),
-            allow_redirects=False,
+            session.get(adfly_url, follow_redirects=False).headers.get("location"),
+            follow_redirects=False,
         )
         response_code = adfly_content.status_code
     return decode_adfly(YTSM.search(adfly_content.text).group(1))
@@ -56,7 +56,7 @@ def get_stream_url_from_kwik(session, adfly_url):
     while code != 302:
         content = session.post(
             KWIK_D_URL.search(decrypted).group(1),
-            allow_redirects=False,
+            follow_redirects=False,
             data={"_token": KWIK_D_TOKEN.search(decrypted).group(1)},
             headers={
                 "referer": str(f_content.url),

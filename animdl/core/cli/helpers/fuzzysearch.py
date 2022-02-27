@@ -1,19 +1,21 @@
-import difflib
+from typing import Callable, Iterable, TypeVar
+
+import regex
+
+search_type = TypeVar("search_type")
 
 
-def search(query, possibilities, cutoff=0.6, *, processor=lambda r: r):
+def search(
+    query: "str",
+    possibilities: "Iterable[search_type]",
+    *,
+    processor: "Callable[[search_type], str]" = lambda r: r
+):
 
-    sequence_matcher = difflib.SequenceMatcher()
-    sequence_matcher.set_seq2(query)
+    pattern = regex.compile(
+        r".*?".join(map(regex.escape, query.strip())) + r".*", flags=regex.IGNORECASE
+    )
 
     for search_value in possibilities:
-        sequence_matcher.set_seq1(processor(search_value))
-        if query.lower() in processor(search_value).lower():
-            yield (None, search_value)
-            continue
-        if (
-            sequence_matcher.real_quick_ratio() >= cutoff
-            and sequence_matcher.quick_ratio() >= cutoff
-            and sequence_matcher.ratio() >= cutoff
-        ):
-            yield (sequence_matcher.ratio(), search_value)
+        if pattern.fullmatch(processor(search_value)):
+            yield search_value

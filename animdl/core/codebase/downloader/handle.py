@@ -10,10 +10,9 @@ from tqdm import tqdm
 
 from ...config import FFMPEG_EXECUTABLE, FFMPEG_HLS, FFMPEG_SUBMERGE
 from .content_mt import mimetypes
-from .ffmpeg import FFMPEG_EXTENSIONS, ffmpeg_download, has_ffmpeg, merge_subtitles
+from .ffmpeg import (FFMPEG_EXTENSIONS, ffmpeg_download, has_ffmpeg,
+                     merge_subtitles)
 from .hls import HLS_STREAM_EXTENSIONS, hls_yield
-from .torrent import MAGNET_URI_REGEX, download_torrent
-from .torrent import is_supported as torrent_is_supported
 
 if FFMPEG_EXECUTABLE:
     ffmpeg_executable = FFMPEG_EXECUTABLE
@@ -120,9 +119,7 @@ def standard_download(
             if ranges:
                 temporary_headers.update({"Ranges": "bytes={}-".format(downloaded)})
             try:
-                with session.stream(
-                    "GET", url, allow_redirects=True, headers=headers
-                ) as http_stream:
+                with session.stream("GET", url, headers=headers) as http_stream:
                     http_stream.raise_for_status()
 
                     for chunks in http_stream.iter_bytes():
@@ -216,9 +213,6 @@ def idm_download(url, headers, content_dir, outfile_name, extension, **opts):
 
 
 def subautomatic(f):
-    """
-    Thanks to @Ashu#1518 for motivating me for this thing here.
-    """
 
     def __inner__(session, url, headers, content_dir, outfile_name, *args, **kwargs):
         logger = logging.getLogger("ffmpeg/submerge")
@@ -283,24 +277,6 @@ def subautomatic(f):
 def handle_download(
     session, url, headers, content_dir, outfile_name, idm=False, **opts
 ):
-
-    if MAGNET_URI_REGEX.search(url):
-        torrent_info = opts.pop("torrent_info", {})
-        endpoint = torrent_info.get("endpoint_url")
-        if torrent_is_supported(session, endpoint):
-            return download_torrent(
-                session,
-                url,
-                content_dir,
-                outfile_name,
-                endpoint,
-                login_data=torrent_info.get("credentials"),
-                log_level=opts.get("log_level", 20),
-            )
-        else:
-            raise Exception(
-                "Got magnet url but qBittorrent WebUI is not active: {!r}".format(url)
-            )
 
     extension, content_size, ranges = process_url(session, url, headers)
 
